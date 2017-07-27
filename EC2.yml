@@ -1,0 +1,86 @@
+---
+- hosts: localhost
+  connection: localhost
+
+  become: yes
+  tasks:
+   - name: Install python 2.7
+     raw: apt-get install -qq python2.7 python-pip
+   - name: install boto
+     raw: pip install boto
+   - name: install pexpect
+     raw: pip install pexpect
+   - name: Create ssh keys
+     expect:
+        command: ssh-keygen -t rsa
+        echo: yes
+        timeout: 5
+        responses:
+          "file": "" ## Enter file in which to save the key (/home/admin/.ssh/id_rsa)
+          "Overwrite": "y" ## Overwrite (y/n)?
+          "passphrase": "" ## Enter passphrase (empty for no passphrase)
+   - name: uploading ec2 key
+     ec2_key:
+        region: us-east-1
+        name: Sundeep-AWSKey
+        key_material: "{{ item }}"
+        state: present
+     with_file: /root/.ssh/id_rsa.pub
+
+   - name: Setting up Security/Firewall Group
+     ec2_group:
+         name: launch-wizard-4444
+         description: Rules Allowing Traffic on port 22 and 80 and 443
+         region: us-east-1
+         rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 443
+            to_port: 443
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 8090
+            to_port: 8090
+            cidr_ip: 0.0.0.0/0
+         rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+
+   - name: Provision a EC2 Instance
+     ec2:
+         key_name: Sundeep-AWSKey
+         region: us-east-1
+         instance_type: t2.micro
+         image: ami-30e65350
+         wait: yes
+         wait_timeout: 500
+         count: 1
+         instance_tags:
+           Name: DevOpsAdmin
+           Owner: Sundeep
+         volumes:
+          - device_name: /dev/sda1
+            volume_type: gp2
+            volume_size: 8
+         monitoring: no
+         vpc_subnet_id: subnet-c2f47b9a
+         assign_public_ip: yes
+         group: launch-wizard-4444
+     register: ec2_out
+   - name: Add the newly created EC2 instance(s) to the local host group (located inside the directory)
+     local_action: lineinfile
+                    dest="./hosts"
+                    regexp={{ item.public_dns_name  }}
+                    insertafter="[webserver]" line={{ item.public_dns_name  }}
+     with_items: "{{ ec2_out.instances }}"
+
+   - name: Wait for SSH to come up
+     wait_for: host={{ item.public_dns_name }} port=22 delay=60 timeout=320 state=started
+     with_items: '{{ec2_out.instances}}'
