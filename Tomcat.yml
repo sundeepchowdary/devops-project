@@ -15,4 +15,4 @@
          - tomcat7-admin
          - tomcat7-examples
       - name:cloning index page
-        raw: git clone "sshurl" /var/lib/tomcat7/webapps/ROOT/index.jsp
+        raw: git clone https://github.com/sundeepchowdary/devops-project.git /var/lib/tomcat7/webapps/ROOT/index.jsp
