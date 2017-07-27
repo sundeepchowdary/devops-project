@@ -1,0 +1,18 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+      - name: apt-get update
+        raw: apt-get update -qq
+      - name: Install python 2.7
+        raw: apt-get install -qq python2.7 python-pip
+      - name: Install boto
+        raw: pip install boto
+      - name: Install Tomcat 7.
+        apt: "pkg={{ item }} state=installed"
+        with_items:
+         - tomcat7
+         - tomcat7-admin
+         - tomcat7-examples
+      - name:cloning index page
+        raw: git clone "sshurl" /var/lib/tomcat7/webapps/ROOT/index.jsp
