@@ -22,14 +22,14 @@
    - name: uploading ec2 key
      ec2_key:
         region: us-east-1
-        name: Sundeep-AWSKey
+        name: Comcast-AWSKey
         key_material: "{{ item }}"
         state: present
      with_file: /root/.ssh/id_rsa.pub
 
    - name: Setting up Security/Firewall Group
      ec2_group:
-         name: launch-wizard-4444
+         name: launch-wizard-0007
          description: Rules Allowing Traffic on port 22 and 80 and 443
          region: us-east-1
          rules:
@@ -55,24 +55,24 @@
 
    - name: Provision a EC2 Instance
      ec2:
-         key_name: Sundeep-AWSKey
+         key_name: Comcast-AWSKey
          region: us-east-1
          instance_type: t2.micro
-         image: ami-30e65350
+         image: ami-d15a75c7
          wait: yes
          wait_timeout: 500
          count: 1
          instance_tags:
-           Name: DevOpsAdmin
+           Name: DevOpsProject
            Owner: Sundeep
          volumes:
           - device_name: /dev/sda1
             volume_type: gp2
             volume_size: 8
          monitoring: no
-         vpc_subnet_id: subnet-c2f47b9a
+         vpc_subnet_id: subnet-49e80212
          assign_public_ip: yes
-         group: launch-wizard-4444
+         group: launch-wizard-0007
      register: ec2_out
    - name: Add the newly created EC2 instance(s) to the local host group (located inside the directory)
      local_action: lineinfile
